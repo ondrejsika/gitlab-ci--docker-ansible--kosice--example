@@ -95,7 +95,9 @@ deploy_prod:
   only:
     - master
   script:
-    - cd ansible && ./apply.sh
+    - cd ansible && sudo ./apply.sh
   environment:
     name: production
     url: https://production-kosice.do.xsika.cz
+  tags:
+    - production
