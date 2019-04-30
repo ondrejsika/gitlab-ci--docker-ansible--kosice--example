@@ -1,0 +1,70 @@
+---
+- name: Install Docker
+  hosts: all
+  roles:
+    - geerlingguy.docker
+
+- name: Install Docker Py
+  hosts: all
+  tasks:
+    - name: Install pip
+      apt:
+        name: python-pip
+    - name: Install Docker Py
+      pip:
+        name: docker-py
+
+
+
+- name: Deploy GO Server
+  hosts: all
+  tasks:
+  - name: Create Traefik network
+    docker_network:
+      name: traefik
+
+  - name: Run Traefik
+    docker_container:
+      name: traefik
+      image: traefik
+      command: |
+            --web \
+            --docker \
+            --docker.watch \
+            --docker.network=traefik \
+            --docker.exposedbydefault=false \
+            --entryPoints="Name:https Address::443 TLS" \
+            --entryPoints="Name:http Address::80 Redirect.EntryPoint:https" \
+            --defaultentrypoints="http,https"
+            --acme \
+            --acme.email="le@demo.h4y.cz" \
+            --acme.storage="/acme-data/acme.json" \
+            --acme.entryPoint="https" \
+            --acme.onHostRule=true \
+            --acme.httpChallenge.entryPoint="http"
+      ports:
+        - 80:80
+        - 443:443
+        - 8080:8080
+      state: started
+      pull: true
+      networks:
+        - name: traefik
+      volumes:
+        - /var/run/docker.sock:/var/run/docker.sock
+        - /acme-data:/acme-data
+
+- name: Deploy GO Server
+  hosts: all
+  tasks:
+  - name: Run Docker container
+    docker_container:
+      name: production
+      image: registry-kosice.do.xsika.cz/ondrejsika/go:master
+      state: started
+      pull: true
+      networks:
+        - name: traefik
+      labels:
+        traefik.frontend.rule: Host:production-kosice.do.xsika.cz
+        traefik.enable: 'true'
