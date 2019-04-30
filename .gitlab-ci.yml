@@ -1,6 +1,7 @@
 stages:
   - build
   - build_docker
+  - test
 
 .build_template: &build_template
   stage: build
@@ -40,3 +41,13 @@ build_docker:
     changes:
       - server.go
       - Dockerfile
+
+test:
+  stage: test
+  script:
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+    - docker pull $CI_REGISTRY_IMAGE
+    - docker run -d --name server-$CI_JOB_ID $CI_REGISTRY_IMAGE
+    - docker run --link server-$CI_JOB_ID:server ondrejsika/curl -fsSL -i http://server
+  after_script:
+    - docker rm -f server-$CI_JOB_ID
