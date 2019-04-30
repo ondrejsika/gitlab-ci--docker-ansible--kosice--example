@@ -57,6 +57,10 @@ test:
     - docker run --link server-$CI_JOB_ID:server ondrejsika/curl -fsSL -i http://server
   after_script:
     - docker rm -f server-$CI_JOB_ID
+  only:
+    changes:
+      - server.go
+      - Dockerfile
 
 deploy_dev:
   stage: deploy_dev
