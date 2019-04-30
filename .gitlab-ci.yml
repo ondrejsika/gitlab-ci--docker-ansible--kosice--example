@@ -2,6 +2,10 @@ stages:
   - build
   - build_docker
   - test
+  - deploy_dev
+
+variables:
+  NAME_DEV: $CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG
 
 .build_template: &build_template
   stage: build
@@ -51,3 +55,30 @@ test:
     - docker run --link server-$CI_JOB_ID:server ondrejsika/curl -fsSL -i http://server
   after_script:
     - docker rm -f server-$CI_JOB_ID
+
+deploy_dev:
+  stage: deploy_dev
+  variables:
+    DOCKER_HOST: $HOST_DEV_DOCKER
+  script:
+    - '[ -n "$HOST_DEV" ]'
+    - '[ -n "$HOST_DEV_DOCKER" ]'
+    - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
+    - docker pull $CI_REGISTRY_IMAGE
+    - docker rm -f $NAME_DEV || true
+    - docker run --name $NAME_DEV -d -l traefik.frontend.rule=Host:$NAME_DEV.$HOST_DEV -l traefik.enable=true --net traefik $CI_REGISTRY_IMAGE
+  environment:
+    name: $CI_COMMIT_REF_SLUG
+    url: https://$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$HOST_DEV
+    on_stop: stop_dev 
+
+stop_dev:
+  stage: deploy_dev
+  when: manual
+  variables:
+    DOCKER_HOST: $HOST_DEV_DOCKER
+  script:
+    - docker rm -f $NAME_DEV
+  environment:
+    name: $CI_COMMIT_REF_SLUG
+    action: stop
