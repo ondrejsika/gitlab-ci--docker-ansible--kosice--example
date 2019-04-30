@@ -3,6 +3,7 @@ stages:
   - build_docker
   - test
   - deploy_dev
+  - deploy_prod
 
 variables:
   NAME_DEV: $CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG
@@ -83,3 +84,14 @@ stop_dev:
   environment:
     name: $CI_COMMIT_REF_SLUG
     action: stop
+
+deploy_prod:
+  stage: deploy_prod
+  when: manual
+  only:
+    - master
+  script:
+    - cd ansible && ./apply.sh
+  environment:
+    name: production
+    url: https://production-kosice.do.xsika.cz
