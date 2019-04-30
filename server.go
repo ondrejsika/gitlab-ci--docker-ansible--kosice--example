@@ -9,6 +9,6 @@ func index(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", index)
-	fmt.Println("Server startded.")
+	fmt.Println("Awesome server startded.")
 	http.ListenAndServe(":80", nil)
 }
