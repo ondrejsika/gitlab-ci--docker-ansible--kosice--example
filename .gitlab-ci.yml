@@ -1,0 +1,11 @@
+stages:
+  - build
+
+build:
+  stage: build
+  image: golang
+  script:
+    - go build server.go
+  artifacts:
+    paths:
+      - server
