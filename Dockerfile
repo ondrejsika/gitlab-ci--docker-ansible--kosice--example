@@ -1,3 +1,3 @@
 FROM debian
-COPY server.go /
+COPY server /
 CMD ["/server"]
