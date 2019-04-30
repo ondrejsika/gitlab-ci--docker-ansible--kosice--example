@@ -6,6 +6,7 @@ stages:
 
 variables:
   NAME_DEV: $CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG
+  IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
 
 .build_template: &build_template
   stage: build
@@ -39,8 +40,8 @@ build_docker:
   stage: build_docker
   script:
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
-    - docker build -t $CI_REGISTRY_IMAGE .
-    - docker push $CI_REGISTRY_IMAGE
+    - docker build -t $IMAGE .
+    - docker push $IMAGE
   only:
     changes:
       - server.go
@@ -50,8 +51,8 @@ test:
   stage: test
   script:
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
-    - docker pull $CI_REGISTRY_IMAGE
-    - docker run -d --name server-$CI_JOB_ID $CI_REGISTRY_IMAGE
+    - docker pull $IMAGE
+    - docker run -d --name server-$CI_JOB_ID $IMAGE
     - docker run --link server-$CI_JOB_ID:server ondrejsika/curl -fsSL -i http://server
   after_script:
     - docker rm -f server-$CI_JOB_ID
@@ -64,9 +65,9 @@ deploy_dev:
     - '[ -n "$HOST_DEV" ]'
     - '[ -n "$HOST_DEV_DOCKER" ]'
     - docker login $CI_REGISTRY -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD
-    - docker pull $CI_REGISTRY_IMAGE
+    - docker pull $IMAGE
     - docker rm -f $NAME_DEV || true
-    - docker run --name $NAME_DEV -d -l traefik.frontend.rule=Host:$NAME_DEV.$HOST_DEV -l traefik.enable=true --net traefik $CI_REGISTRY_IMAGE
+    - docker run --name $NAME_DEV -d -l traefik.frontend.rule=Host:$NAME_DEV.$HOST_DEV -l traefik.enable=true --net traefik $IMAGE
   environment:
     name: $CI_COMMIT_REF_SLUG
     url: https://$CI_PROJECT_PATH_SLUG-$CI_COMMIT_REF_SLUG.$HOST_DEV
